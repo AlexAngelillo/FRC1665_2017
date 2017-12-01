@@ -1,0 +1,707 @@
+package org.usfirst.frc.team1665.robot;
+
+import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.BuiltInAccelerometer;
+import edu.wpi.first.wpilibj.smartdashboard.*;
+
+
+/*
+ * Joystick info:
+ * left x = axis0
+ * left y = axis1
+ * left trigger = axis2
+ * right trigger = axis3
+ * right x = axis4
+ * right y = axis5
+ * 
+ * A = button 1
+ * B = button 2
+ * X = button 3
+ * Y = button 4
+ * LB = button 5
+ * RB = button 6
+ */
+
+
+
+
+public class myRobot
+{
+	// ========== Port declarations ==========
+	// PWM - Motors
+	int leftDrive1Port = 1;
+	int leftDrive2Port = 3;
+	int rightDrive1Port = 2;
+	int rightDrive2Port = 4;
+	int ballLiftPort = 5;
+	int ballCapturePort = 7;
+	int topOuttakePort = 9;
+	int bottomOuttakePort = 8;
+	int climberPort = 6;
+	
+	// DIO - Pneumatics, encoders
+	int gearSol1Port = 0;
+	int gearSol2Port = 1;
+	int climberSol1Port = 2;
+	int climberSol2Port = 3;
+	int batterySol1Port = 4;
+	int batterySol2Port = 5;
+	int intakeSol1Port = 6;
+	int intakeSol2Port = 7;
+	
+	int leftEncoderPort1 = 8;
+	int leftEncoderPort2 = 7;
+	int rightEncoderPort1 = 6;
+	int rightEncoderPort2 = 5;
+	
+	// ========== Joysticks ==========
+	Joystick driverJoystick;
+	Joystick armJoystick;
+	
+	// ========== Motors ==========
+	// Drive motors
+	Spark leftDrive1;
+	Spark leftDrive2;
+	Spark rightDrive1;
+	Spark rightDrive2;
+	
+	// Interior roller
+	Spark ballLift;
+	
+	// Exterior ball intake motors
+	Talon ballCapture; 
+	
+	// Outtake motors
+	Talon topOuttake;
+	Talon bottomOuttake;
+	
+	// Climber motor
+	Spark climber;
+	
+	
+	// ========== Pneumatics ==========
+	Compressor comp;
+	Solenoid gearSol1;
+	Solenoid gearSol2;
+	Solenoid climberSol1;
+	Solenoid climberSol2;
+	Solenoid intakeSol1;
+	Solenoid intakeSol2;
+	Solenoid batterySol1;
+	Solenoid batterySol2;
+	
+	// ========== Sensors ==========
+	Encoder leftEncoder;
+	Encoder rightEncoder;
+	
+	boolean ballCaptureOut = false;
+	boolean ballCaptureHelper = false;
+	boolean gearOut = false;
+	boolean gearHelper = false;
+	boolean climberOut = false;
+	boolean climberHelper = false;
+	boolean batteryHelper = false;
+	boolean intakeHelper = false;
+	boolean intakeOut = true;
+	
+	boolean driveDone = false;
+	boolean turnDone = false;
+	
+	SmartDashboard dash;
+	BuiltInAccelerometer accel;
+	
+	double x;
+	double v_x;
+	
+	Timer timer;
+	double timer_start = 0.0;
+	
+	
+	// Empty constructor, nothing should happen until robot init
+	public myRobot() {}
+	
+	public void init()
+	{
+		try
+		{
+			// Joystick initializations
+			driverJoystick = new Joystick(0);
+			armJoystick = new Joystick(1);
+			
+			// Motor initializations
+			leftDrive1 = new Spark(leftDrive1Port);
+			leftDrive2 = new Spark(leftDrive2Port);
+			rightDrive1 = new Spark(rightDrive1Port);
+			rightDrive2 = new Spark(rightDrive2Port);
+			ballLift = new Spark(ballLiftPort);
+			ballCapture = new Talon(ballCapturePort);
+			topOuttake = new Talon(topOuttakePort);
+			bottomOuttake = new Talon(bottomOuttakePort);
+			climber = new Spark(climberPort);
+			
+			
+			// Inversions
+			leftDrive1.setInverted(true);
+			leftDrive2.setInverted(true);
+			
+			
+			// Pneumatic initializations
+			comp = new Compressor(0);
+			gearSol1 = new Solenoid(gearSol1Port);
+			gearSol2 = new Solenoid(gearSol2Port);
+			climberSol1 = new Solenoid(climberSol1Port);
+			climberSol2 = new Solenoid(climberSol2Port);
+			intakeSol1 = new Solenoid(intakeSol1Port);
+			intakeSol2 = new Solenoid(intakeSol2Port);
+			batterySol1 = new Solenoid(batterySol1Port);
+			batterySol2 = new Solenoid(batterySol2Port);
+			
+			// Set initial pneumatic values
+			gearSol1.set(false);
+			gearSol2.set(true);
+			climberSol1.set(true);
+			climberSol2.set(false);
+			batterySol1.set(false);
+			batterySol2.set(true);
+			
+			// Encoder initializations
+			leftEncoder = new Encoder(leftEncoderPort1, leftEncoderPort2, false);
+			rightEncoder = new Encoder(rightEncoderPort1, rightEncoderPort2, false);
+			
+			leftEncoder.reset();
+			rightEncoder.reset();
+			
+			
+			// Camera setup
+			CameraServer server = CameraServer.getInstance();
+			server.startAutomaticCapture();
+			
+			// SmartDashboard
+			dash = new SmartDashboard();
+			
+			// Accelerometer
+			accel = new BuiltInAccelerometer();
+			
+			timer = new Timer();
+			
+		}
+		catch (Exception ex) {}
+	}
+	
+	public void baseDriveControl()
+	{
+		// Assumes left stick x,y is 0,1 and right stick is 2,3
+		double leftJoy = driverJoystick.getRawAxis(1);
+		double rightJoy = driverJoystick.getRawAxis(4);
+		
+		double leftPower = leftJoy - rightJoy;
+		double rightPower = leftJoy + rightJoy;
+		
+		leftPower = squareKeepSign(leftPower);
+		rightPower = squareKeepSign(rightPower);
+		
+		// TODO gyro input, +/- each side
+		leftDrive1.set(leftPower);
+		leftDrive2.set(leftPower);
+		rightDrive1.set(rightPower);
+		rightDrive2.set(rightPower);
+	}
+	
+	public void ballLiftControl()
+	{
+		// Left trigger in, left bumper out
+		double triggerInput = driverJoystick.getRawAxis(2);
+		boolean leftBumper = driverJoystick.getRawButton(5);
+		boolean rightBumper = driverJoystick.getRawButton(6);
+		
+		if (triggerInput > 0.25 || rightBumper) // roll in
+			ballLift.set(-1);
+		else if(leftBumper) // roll out
+			ballLift.set(0.75);
+		else if (intakeOut)
+			ballLift.set(0);
+	}
+	
+	public void ballCaptureControl()
+	{
+		// Right trigger to drop, rb to spin
+		boolean rightBumper = driverJoystick.getRawButton(6);
+		double rightTrigger = driverJoystick.getRawAxis(3);
+		
+		// Intake roller control
+		// Intake up/down control
+		if (rightBumper && intakeHelper == false)
+		{
+			if (intakeOut)
+			{
+				ballCapture.set(-0.75);
+				ballLift.set(-1);
+			}
+			else
+				ballCapture.set(0);
+			intakeOut = !intakeOut;
+			
+			intakeHelper = true;
+		}
+		else if (!rightBumper)
+			intakeHelper = false;			
+		
+		// Intake up/down control
+		if (rightTrigger > 0.5 && ballCaptureHelper == false)
+		{
+			ballCaptureOut = !ballCaptureOut;
+			intakeSol1.set(ballCaptureOut);
+			intakeSol2.set(!ballCaptureOut);
+			ballCaptureHelper = true;
+		}
+		else if (rightTrigger < 0.5)
+			ballCaptureHelper = false;			
+	}
+	
+	public void compressorControl()
+	{
+		comp.setClosedLoopControl(true);
+	}
+	
+	public void outtakeControl()
+	{
+		// Operator
+		// B to spit out balls
+		// X to take in
+		
+		boolean out = armJoystick.getRawButton(2);
+		boolean in = armJoystick.getRawButton(3);
+		
+		if (in)
+		{
+			topOuttake.set(1);
+			bottomOuttake.set(-1);
+		}
+		else if (out)
+		{
+			topOuttake.set(1);
+			bottomOuttake.set(1);
+		}
+		else
+		{
+			topOuttake.set(0);
+			bottomOuttake.set(0);
+		}
+		
+	}
+	
+	public void climberControl()
+	{
+		// Operator
+		boolean climberIn = armJoystick.getRawButton(1);
+		boolean climberOut = armJoystick.getRawButton(7);
+		
+		if (climberIn)
+		{
+			climberSol1.set(false);
+			climberSol2.set(true);
+		}
+		else if (climberOut)
+		{
+			climberSol1.set(true);
+			climberSol2.set(false);
+		}
+		
+		boolean climbPressUp = armJoystick.getRawButton(4);
+		
+		// Not sure why you need this try catch, but robot
+		// immediately disables if there isn't one here
+		try
+		{
+			if (climbPressUp)
+				climber.set(1);
+			else
+				climber.set(0);
+		}
+		catch (Exception ex) {}
+		
+	}
+	
+	public void gearControl()
+	{
+		// Y to toggle
+		
+		boolean yButtonPress = driverJoystick.getRawButton(4);
+		
+		if (yButtonPress && gearHelper == false)
+		{
+			gearOut = !gearOut;
+			gearSol1.set(gearOut);
+			gearSol2.set(!gearOut);
+			gearHelper = true;
+		}
+		else if (!yButtonPress)
+			gearHelper = false;	
+		
+	}
+	
+	public void batteryControl()
+	{
+		//Operator
+		double leftTrigger = armJoystick.getRawAxis(3);
+		double rightTrigger = armJoystick.getRawAxis(4);
+		
+		boolean rb = armJoystick.getRawButton(6);
+		boolean lb = armJoystick.getRawButton(5);
+		
+		if ((lb ||leftTrigger > 0.5) && !batteryHelper)
+		{
+			batterySol1.set(false);
+			batterySol2.set(true);
+			batteryHelper = true;
+		}
+		else if ((rb || rightTrigger > 0.5) && !batteryHelper)
+		{
+			batterySol1.set(true);
+			batterySol2.set(false);
+			batteryHelper = true;
+		}
+		else
+			batteryHelper = false;
+	}
+
+	public void smartDashboardControl()
+	{
+		double leftPos = leftEncoder.getDistance();
+		double rightPos = rightEncoder.getDistance();
+
+		dash.putString("X:", Double.toString(leftPos));
+		dash.putString("Y:", Double.toString(rightPos));
+		dash.putString("Z:", Double.toString(accel.getX()));
+	}
+	
+	public double squareKeepSign(double a)
+	{
+		double out = a * a;
+		if (a < 0)
+			out = out*-1;
+		return out;
+	}
+
+	public void driveForwardAuto()
+	{
+		double speed = 0.4;
+		double duration = 4.5;
+		
+		dash.putString("X:", Double.toString(timer.get()));
+		dash.putString("Y:", Double.toString(timer_start));
+		
+		if (timer.get() - timer_start > duration)
+		{
+			leftDrive1.set(0);
+			leftDrive2.set(0);
+			rightDrive1.set(0);
+			rightDrive2.set(0);
+		}
+		else
+		{
+			leftDrive1.set(speed);
+			leftDrive2.set(speed);
+			rightDrive1.set(speed);
+			rightDrive2.set(speed);
+		}
+		
+		
+		// If encoders ever work
+		/*
+		double setpoint = 100;
+		
+		double Kp_left = 0.025;
+		double Kp_right = 0.025;
+		
+		double error_left = leftEncoder.getDistance() - setpoint;
+		double error_right = rightEncoder.getDistance() - setpoint;
+		
+		double leftPower = Kp_left * error_left;
+		double rightPower = Kp_right * error_right;
+		
+		leftDrive1.set(leftPower);
+		leftDrive2.set(leftPower);
+		rightDrive1.set(rightPower);
+		rightDrive2.set(rightPower);
+		*/
+	}
+	
+	public void gearAuto()
+	{
+		double speed = 0.4;
+		double duration = 3.1;
+		double delayTime = 1.0;
+		double backupSpeed = -0.35;
+		double backupDuration = 0.2;
+		
+		dash.putString("X:", Double.toString(timer.get()));
+		dash.putString("Y:", Double.toString(timer_start));
+		
+		double time = timer.get() - timer_start;
+		
+		if (time < duration)
+		{
+			leftDrive1.set(speed);
+			leftDrive2.set(speed);
+			rightDrive1.set(speed);
+			rightDrive2.set(speed);
+		}
+		else if (time < delayTime + duration)
+		{
+			leftDrive1.set(0);
+			leftDrive2.set(0);
+			rightDrive1.set(0);
+			rightDrive2.set(0);
+		}
+		else if (time < duration + delayTime + backupDuration)
+		{
+			leftDrive1.set(backupSpeed);
+			leftDrive2.set(backupSpeed);
+			rightDrive1.set(backupSpeed);
+			rightDrive2.set(backupSpeed);
+		}
+		else
+		{
+			leftDrive1.set(0);
+			leftDrive2.set(0);
+			rightDrive1.set(0);
+			rightDrive2.set(0);
+		}
+		
+		gearSol1.set(true);
+		gearSol2.set(false);
+		
+		
+		// If encoders ever work
+		/*
+		double setpoint = 100;
+		
+		double Kp_left = 0.025;
+		double Kp_right = 0.025;
+		
+		double error_left = leftEncoder.getDistance() - setpoint;
+		double error_right = rightEncoder.getDistance() - setpoint;
+		
+		double leftPower = Kp_left * error_left;
+		double rightPower = Kp_right * error_right;
+		
+		leftDrive1.set(leftPower);
+		leftDrive2.set(leftPower);
+		rightDrive1.set(rightPower);
+		rightDrive2.set(rightPower);
+		*/
+	}
+	
+	// NOT USED
+	// dir = 1: turn right
+	// dir = -1: turn left
+	@SuppressWarnings("static-access")
+	public void gearTurnAuto(int dir)
+	{
+		double speed = 0.4;
+		double drive1Duration = 1.25;
+		double turnSpeed = 0.6;
+		double turnDuration = 0.75;
+		double drive2Duration = 1.3;
+		double waitDuration = 5;
+		double reverseDuration = 1.5;
+		double turnbackDuration = 0.5;
+		double finalDriveDuration = 2.5;
+		
+		
+		dash.putString("X:", Double.toString(timer.get()));
+		dash.putString("Y:", Double.toString(timer_start));
+		
+
+		// Drive forward to line
+		if (timer.get() - timer_start < drive1Duration)
+		{
+			leftDrive1.set(speed);
+			leftDrive2.set(speed);
+			rightDrive1.set(speed);
+			rightDrive2.set(speed);
+		}
+		// Turn the direction to face wall
+		else if (timer.get() - timer_start < (turnDuration + drive1Duration))
+		{
+			leftDrive1.set(turnSpeed * dir);
+			leftDrive2.set(turnSpeed * dir);
+			rightDrive1.set(-1 * turnSpeed * dir);
+			rightDrive2.set(-1 * turnSpeed * dir);
+		}
+		// Place gear
+		else if (timer.get() - timer_start < (turnDuration + drive1Duration + drive2Duration))
+		{
+			leftDrive1.set(speed);
+			leftDrive2.set(speed);
+			rightDrive1.set(speed);
+			rightDrive2.set(speed);
+		}
+		// Wait for a second
+		else if (timer.get() - timer_start < (waitDuration + turnDuration + drive1Duration + drive2Duration))
+		{
+			leftDrive1.set(0);
+			leftDrive2.set(0);
+			rightDrive1.set(0);
+			rightDrive2.set(0);
+		}
+		// Back up afterwards
+		else if (timer.get() - timer_start < (reverseDuration + waitDuration + turnDuration + drive1Duration + drive2Duration))
+		{
+			leftDrive1.set(-1 * speed);
+			leftDrive2.set(-1 * speed);
+			rightDrive1.set(-1 * speed);
+			rightDrive2.set(-1 * speed);
+		}
+		// Turn out
+		else if (timer.get() - timer_start < (turnbackDuration + reverseDuration + waitDuration + turnDuration + drive1Duration + drive2Duration))
+		{
+			leftDrive1.set(-1 * turnSpeed * dir);
+			leftDrive2.set(-1 * turnSpeed * dir);
+			rightDrive1.set(turnSpeed * dir);
+			rightDrive2.set(turnSpeed * dir);
+		}
+		
+		// Final drive forward
+		else if (timer.get() - timer_start < (finalDriveDuration + turnbackDuration + reverseDuration + waitDuration + turnDuration + drive1Duration + drive2Duration))
+		{
+			leftDrive1.set(speed);
+			leftDrive2.set(speed);
+			rightDrive1.set(speed);
+			rightDrive2.set(speed);
+		}
+		// Finally, stop
+		else
+		{
+			leftDrive1.set(0);
+			leftDrive2.set(0);
+			rightDrive1.set(0);
+			rightDrive2.set(0);
+		}
+		
+		gearSol1.set(true);
+		gearSol2.set(false);
+	}
+	
+	// dir = 1: red
+	// dir = -1: blue
+	public void ballAndGearAuto(int dir)
+	{
+		double driveSpeed = 0.4;
+		double initialDriveDuration = 0.5;
+		double outtakeDuration = 5.0;
+		double leftTurnDuration = 0.5;
+		double turnSpeed = 0.5;
+		double driveDuration = 1.32;
+		double rightTurnDuration = 0.75;
+		double finalForwardDuration = 2.5;
+		double backoffDuration = 0.4;
+		
+		
+		double time = timer.get() - timer_start;
+		
+		// Wiggle the gear box
+		if (time < outtakeDuration)
+		{
+			if ((int)(time) % 2 == 0)
+			{
+				gearSol1.set(true);
+				gearSol2.set(false);
+			}
+			else
+			{
+				gearSol1.set(false);
+				gearSol2.set(true);
+			}
+		}
+		
+		
+		if (time < outtakeDuration / 5)
+		{
+			topOuttake.set(-1);
+			bottomOuttake.set(-1);
+		}
+		else if (time < outtakeDuration)
+		{
+			topOuttake.set(1);
+			bottomOuttake.set(1);
+		}
+		else if (time < (initialDriveDuration + outtakeDuration))
+		{
+			gearSol1.set(true);
+			gearSol2.set(false);
+			topOuttake.set(0);
+			bottomOuttake.set(0);
+			leftDrive1.set(driveSpeed);
+			leftDrive2.set(driveSpeed);
+			rightDrive1.set(driveSpeed);
+			rightDrive2.set(driveSpeed);
+		}
+		else if (time < (leftTurnDuration + initialDriveDuration +  outtakeDuration))
+		{
+			topOuttake.set(0);
+			bottomOuttake.set(0);
+			leftDrive1.set(dir * turnSpeed);
+			leftDrive2.set(dir * turnSpeed);
+			rightDrive1.set(dir * -1 * turnSpeed);
+			rightDrive2.set(dir * -1 * turnSpeed);			
+		}
+		else if (time < (driveDuration + leftTurnDuration + initialDriveDuration + outtakeDuration))
+		{
+			leftDrive1.set(driveSpeed);
+			leftDrive2.set(driveSpeed);
+			rightDrive1.set(driveSpeed);
+			rightDrive2.set(driveSpeed);
+		}
+		else if (time < (rightTurnDuration + driveDuration + leftTurnDuration + initialDriveDuration + outtakeDuration))
+		{
+			leftDrive1.set(dir * -1 * turnSpeed);
+			leftDrive2.set(dir * -1 * turnSpeed);
+			rightDrive1.set(dir * turnSpeed);
+			rightDrive2.set(dir * turnSpeed);			
+		}
+		else if (time < (finalForwardDuration + rightTurnDuration + driveDuration + leftTurnDuration + initialDriveDuration + outtakeDuration))
+		{
+			leftDrive1.set(driveSpeed);
+			leftDrive2.set(driveSpeed);
+			rightDrive1.set(driveSpeed);
+			rightDrive2.set(driveSpeed);	
+		}
+		else if (time < (backoffDuration + finalForwardDuration + rightTurnDuration + driveDuration + leftTurnDuration + initialDriveDuration + outtakeDuration))
+		{
+			double backoffSpeed = -0.35;
+			leftDrive1.set(backoffSpeed);
+			leftDrive2.set(backoffSpeed);
+			rightDrive1.set(backoffSpeed);
+			rightDrive2.set(backoffSpeed);	
+		}
+		// Stop
+		else
+		{
+			leftDrive1.set(0);
+			leftDrive2.set(0);
+			rightDrive1.set(0);
+			rightDrive2.set(0);
+		}
+	}
+	
+	public void resetEncoders()
+	{
+		leftEncoder.reset();
+		rightEncoder.reset();
+	}
+	
+	public void startTimer()
+	{
+		timer.start();
+		timer_start = timer.get();
+	}
+}

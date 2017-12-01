@@ -1,0 +1,141 @@
+package org.usfirst.frc.team1665.robot;
+
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.wpilibj.Talon;
+
+public class myRobot
+{
+	// ========== Port declarations ==========
+	// PWM - Motors
+	int leftDrive1Port = 1;
+	int leftDrive2Port = 3;
+	int rightDrive1Port = 2;
+	int rightDrive2Port = 4;
+	int ballLiftPort = 5;
+	int ballCapturePort = 7;
+	int topOuttakePort = 6;
+	int bottomOuttakePort = 8;
+	int climberPort = 9;
+	
+	// DIO - Pneumatics, encoders
+	int gearSol1Port = 1;
+	int gearSol2Port = 2;
+	int climberSolPort = 3;
+	int intakeSol1Port = 4;
+	int intakeSol2Port = 5;
+	int leftEncoderPort1 = 6;
+	int leftEncoderPort2 = 7;
+	int rightEncoderPort1 = 8;
+	int rightEncoderPort2 = 9;
+	
+	// ========== Joysticks ==========
+	Joystick driverJoystick;
+	Joystick armJoystick;
+	
+	// ========== Motors ==========
+	// Drive motors
+	Spark leftDrive1;
+	Spark leftDrive2;
+	Spark rightDrive1;
+	Spark rightDrive2;
+	
+	// Interior roller
+	Spark ballLift;
+	
+	// Exterior ball intake motors
+	Talon ballCapture; 
+	
+	// Outtake motors
+	Talon topOuttake;
+	Talon bottomOuttake;
+	
+	// Climber motor
+	Spark climber;
+	
+	
+	// ========== Pneumatics ==========
+	Compressor comp;
+	Solenoid gearSol1;
+	Solenoid gearSol2;
+	Solenoid climberSol;
+	Solenoid intakeSol1;
+	Solenoid intakeSol2;
+	
+	// ========== Sensors ==========
+	Encoder leftEncoder;
+	Encoder rightEncoder;
+	
+	
+	
+	// Empty constructor, nothing should happen until robot init
+	public myRobot() {}
+	
+	public void init()
+	{
+		// Joystick initializations
+		driverJoystick = new Joystick(0);
+		armJoystick = new Joystick(1);
+		
+		// Motor initializations
+		leftDrive1 = new Talon(leftDrive1Port);
+		leftDrive2 = new Talon(leftDrive2Port);
+		rightDrive1 = new Talon(rightDrive1Port);
+		rightDrive2 = new Talon(rightDrive2Port);
+		roller = new Talon(rollerPort);
+		intake = new Talon(intakePort);
+		topOuttake = new Spark(topOuttakePort);
+		bottomOuttake = new Spark(bottomOuttakePort);
+		climber = new Spark(climberPort);
+		
+		// Pneumatic initializations
+		comp = new Compressor(0);
+		gearSol1 = new Solenoid(gearSol1Port);
+		gearSol2 = new Solenoid(gearSol2Port);
+		climberSol = new Solenoid(climberSolPort);
+		intakeSol1 = new Solenoid(intakeSol1Port);
+		intakeSol2 = new Solenoid(intakeSol2Port);
+		
+		// Encoder initializations
+		leftEncoder = new Encoder(leftEncoderPort1, leftEncoderPort2, false);
+		rightEncoder = new Encoder(rightEncoderPort1, rightEncoderPort2, false);
+	}
+	
+	public void baseDriveControl()
+	{
+		// Assumes left stick x,y is 0,1 and right stick is 2,3
+		double leftJoy = driverJoystick.getRawAxis(1);
+		double rightJoy = driverJoystick.getRawAxis(3);
+		
+		// TODO gyro input, +/- each side
+		leftDrive1.set(leftJoy);
+		leftDrive2.set(leftJoy);
+		rightDrive1.set(rightJoy);
+		rightDrive2.set(rightJoy);
+		
+	}
+	
+	public void rollerControl()
+	{
+		
+	}
+	
+	public void intakeControl()
+	{
+		
+	}
+	
+	public void outtakeControl()
+	{
+		
+	}
+	
+	public void climberControl()
+	{
+		
+	}
+	
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="edu.wpi.first.wpilibj.Joystick"/>
+<fullyQualifiedTypeName name="edu.wpi.first.wpilibj.Talon"/>
+<fullyQualifiedTypeName name="edu.wpi.first.wpilibj.Spark"/>
+<fullyQualifiedTypeName name="edu.wpi.first.wpilibj.Compressor"/>
+<fullyQualifiedTypeName name="edu.wpi.first.wpilibj.Solenoid"/>
+<fullyQualifiedTypeName name="edu.wpi.first.wpilibj.Encoder"/>
+<fullyQualifiedTypeName name="edu.wpi.first.wpilibj.CameraServer"/>
+<fullyQualifiedTypeName name="edu.wpi.first.wpilibj.BuiltInAccelerometer"/>
+<fullyQualifiedTypeName name="edu.wpi.first.wpilibj.Timer"/>
+<fullyQualifiedTypeName name="java.util.Timer"/>
+</qualifiedTypeNameHistroy>
